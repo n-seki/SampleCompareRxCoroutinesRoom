@@ -14,24 +14,15 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    @Inject
-    lateinit var booksViewModelFactory: BooksViewModel.Factory
-    private val viewModel by viewModels<BooksViewModel>{
-        object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-                return booksViewModelFactory.create() as T
-            }
-        }
-    }
+    private val viewModel by viewModels<BooksViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.findButton.setOnClickListener {
-            viewModel.find("no existence")
+        binding.insertButton.setOnClickListener {
+            viewModel.insertBook()
         }
 
         viewModel.bookFlowable.observe(this, Observer { Log.d("book-flowable", it.toString()) })

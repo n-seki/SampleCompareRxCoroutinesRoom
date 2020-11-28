@@ -1,35 +1,41 @@
 package nseki.com.app.samplecomparerxcoroutinesroom
 
-import android.util.Log
+import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
-import javax.inject.Inject
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 
-class BooksViewModel(
+class BooksViewModel @ViewModelInject constructor(
     private val booksDao: BooksDao
 ) : ViewModel() {
 
+    companion object {
+        private const val bookId = "12345"
+    }
+
     private val foundId = MutableLiveData<String>()
 
-    val bookFlowable: LiveData<BookEntity> = foundId.switchMap { id ->
-        booksDao.findByIdFlowable(id).toLiveData()
+    val bookFlowable: LiveData<String> = foundId.switchMap { id ->
+        booksDao.findByIdFlowable(id).map { it.title }.toLiveData()
     }
 
-    val bookFlow: LiveData<BookEntity> = foundId.switchMap { id ->
-        booksDao.findByIdFlow(id).catch {
-            Log.d("book-flow", it.message.toString())
-        }.asLiveData()
+    val bookFlow: LiveData<String> = foundId.switchMap { id ->
+        booksDao.findByIdFlow(id)
+            .map { it.title }
+            .catch { emit("error: ${it.message}") }
+            .asLiveData()
     }
 
-    fun find(id: String) {
-        foundId.value = id
+    init {
+        foundId.value = bookId
     }
 
-    class Factory @Inject constructor(
-        private val booksDao: BooksDao
-    ) {
-        fun create(): BooksViewModel {
-            return BooksViewModel(booksDao)
-        }
+    fun insertBook() = viewModelScope.launch(Dispatchers.IO) {
+        val book = BookEntity(bookId, "Room is wonderful", 1024.0)
+        booksDao.insert(book)
     }
 }
